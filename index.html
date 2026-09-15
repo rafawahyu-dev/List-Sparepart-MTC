@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gudang Part — Workshop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#E3E6E8;
+    --surface:#FFFFFF;
+    --ink:#161A20;
+    --ink-soft:#586170;
+    --steel:#232C3D;
+    --steel-2:#3D4A63;
+    --amber:#E8A33D;
+    --amber-ink:#5C3D0A;
+    --red:#B3261E;
+    --green:#3F7D58;
+    --line:#D3D7D2;
+    --line-soft:#E7E9E4;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums;}
+  h1,h2,h3{font-family:'Archivo',system-ui,sans-serif;margin:0;}
+  #app{max-width:960px;margin:0 auto;padding-bottom:64px;}
+
+  .topbar{
+    background:var(--steel);
+    color:#fff;
+    padding:20px 20px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    flex-wrap:wrap;
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+  .brand{display:flex;gap:14px;align-items:center;}
+  .brand-mark{
+    font-family:'Archivo',sans-serif;
+    font-weight:900;
+    font-size:12px;
+    letter-spacing:0.5px;
+    background:var(--amber);
+    color:var(--amber-ink);
+    padding:8px 9px;
+    border-radius:4px;
+    line-height:1;
+  }
+  .brand h1{font-size:21px;font-weight:800;}
+  .brand p{margin:3px 0 0;font-size:13px;color:#B7BECC;}
+  .topbar-actions{display:flex;gap:6px;align-items:center;}
+  .tab-btn{
+    background:transparent;
+    border:1px solid #4A566C;
+    color:#C7CDD9;
+    padding:8px 14px;
+    border-radius:4px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .tab-btn.active{background:#fff;color:var(--steel);border-color:#fff;}
+  .sync-btn{
+    background:transparent;border:none;color:#8E97A8;cursor:pointer;font-size:12px;
+    padding:6px 8px;display:flex;align-items:center;gap:5px;
+  }
+  .sync-btn:hover{color:#fff;}
+
+  .controls{
+    padding:16px 20px 8px;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  #searchInput{
+    flex:1;
+    min-width:180px;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:14px;
+    background:var(--surface);
+    color:var(--ink);
+  }
+  #searchInput:focus{outline:2px solid var(--steel-2);outline-offset:1px;}
+  .result-count{font-size:12.5px;color:var(--ink-soft);padding:0 20px 4px;}
+  .rak-filters{display:flex;gap:6px;flex-wrap:wrap;padding:0 20px 8px;}
+  .rak-chip{
+    border:1px solid var(--line);
+    background:var(--surface);
+    padding:7px 11px;
+    border-radius:4px;
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+    color:var(--ink-soft);
+  }
+  .rak-chip.active{background:var(--steel);color:#fff;border-color:var(--steel);}
+
+  main{padding:6px 20px 0;}
+
+  .part-row{
+    background:var(--surface);
+    border:1px solid var(--line-soft);
+    border-left:5px solid #999;
+    border-radius:3px;
+    padding:14px 16px;
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+
+  .part-main{flex:1;min-width:220px;}
+  .part-tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    color:var(--ink-soft);
+    background:var(--line-soft);
+    padding:2px 7px;
+    border-radius:3px;
+    margin-right:8px;
+    letter-spacing:0.3px;
+  }
+  .part-name{font-weight:600;font-size:15px;}
+  .part-meta{font-size:12.5px;color:var(--ink-soft);margin-top:5px;}
+  .part-meta b{color:var(--ink);}
+
+  .part-stock{text-align:right;min-width:110px;}
+  .stock-num{font-size:22px;font-weight:700;font-family:'Archivo',sans-serif;}
+  .stock-unit{font-size:12px;color:var(--ink-soft);}
+  .stock-num.low{color:var(--red);}
+  .stock-num.ok{color:var(--ink);}
+
+  .part-actions{display:flex;gap:6px;}
+  .btn{
+    border:none;
+    padding:9px 14px;
+    border-radius:4px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .btn-primary{background:var(--amber);color:var(--amber-ink);}
+  .btn-primary:disabled{background:var(--line-soft);color:#9AA0A8;cursor:not-allowed;}
+  .btn-ghost{background:transparent;color:var(--steel-2);border:1px solid var(--line);}
+
+  .empty-state{
+    text-align:center;padding:48px 16px;color:var(--ink-soft);
+  }
+
+  /* history */
+  .tx-row{
+    background:var(--surface);
+    border:1px solid var(--line-soft);
+    border-radius:3px;
+    padding:12px 16px;
+    margin-bottom:7px;
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+  }
+  .tx-icon{
+    width:30px;height:30px;border-radius:50%;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:800;color:#fff;
+  }
+  .tx-icon.keluar{background:var(--red);}
+  .tx-icon.masuk{background:var(--green);}
+  .tx-icon.baru{background:var(--steel-2);}
+  .tx-body{flex:1;}
+  .tx-title{font-size:14px;font-weight:600;}
+  .tx-sub{font-size:12.5px;color:var(--ink-soft);margin-top:3px;}
+  .tx-time{font-size:12px;color:var(--ink-soft);white-space:nowrap;}
+
+  /* modal */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(22,26,32,0.55);
+    display:flex;align-items:flex-end;justify-content:center;
+    z-index:50;
+  }
+  @media(min-width:640px){
+    .modal-overlay{align-items:center;}
+  }
+  .modal{
+    background:var(--surface);
+    width:100%;max-width:440px;
+    border-radius:10px 10px 0 0;
+    padding:22px 22px 24px;
+    max-height:88vh;overflow-y:auto;
+  }
+  @media(min-width:640px){ .modal{border-radius:10px;} }
+  .modal h2{font-size:18px;margin-bottom:2px;}
+  .modal .modal-sub{font-size:13px;color:var(--ink-soft);margin-bottom:16px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .field input,.field textarea,.field select{
+    width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:4px;
+    font-family:'IBM Plex Sans',sans-serif;font-size:14px;color:var(--ink);background:#fff;
+  }
+  .field input:focus,.field textarea:focus{outline:2px solid var(--steel-2);outline-offset:1px;}
+  .toggle-row{display:flex;gap:8px;margin-bottom:16px;}
+  .toggle-btn{
+    flex:1;padding:10px;border:1px solid var(--line);border-radius:4px;
+    background:#fff;font-weight:600;font-size:13px;cursor:pointer;color:var(--ink-soft);
+  }
+  .toggle-btn.active.keluar{background:var(--red);border-color:var(--red);color:#fff;}
+  .toggle-btn.active.masuk{background:var(--green);border-color:var(--green);color:#fff;}
+  .field-error{color:var(--red);font-size:12.5px;margin-top:6px;display:none;}
+  .modal-actions{display:flex;gap:8px;margin-top:6px;}
+  .modal-actions .btn{flex:1;}
+  .btn-cancel{background:var(--line-soft);color:var(--ink-soft);}
+
+  .toast{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--steel);color:#fff;padding:11px 18px;border-radius:6px;
+    font-size:13.5px;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;
+    z-index:80;max-width:90%;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .loading-wrap{padding:60px 16px;text-align:center;color:var(--ink-soft);font-size:14px;}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">158 PART</div>
+      <div>
+        <h1>Gudang Part</h1>
+        <p>Log stok workshop — siapa ambil, kapan, dan email-nya</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="tab-btn active" id="viewStockBtn">Stok</button>
+      <button class="tab-btn" id="viewHistoryBtn">Riwayat</button>
+      <button class="sync-btn" id="refreshBtn" title="Sinkronkan data terbaru">⟳ Sinkron</button>
+    </div>
+  </header>
+
+  <div class="controls">
+    <input id="searchInput" placeholder="Cari nama part...">
+    <button class="btn btn-primary" id="addPartBtn" type="button">+ Part Baru</button>
+  </div>
+  <div class="rak-filters" id="rakFilters"></div>
+  <div class="result-count" id="resultCount"></div>
+
+  <main id="stockView">
+    <div id="partList" class="loading-wrap">Memuat data...</div>
+  </main>
+
+  <main id="historyView" style="display:none">
+    <div id="historyList" class="loading-wrap">Memuat riwayat...</div>
+  </main>
+</div>
+
+<div id="modalOverlay" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2 id="modalPartName">Nama Part</h2>
+    <p class="modal-sub" id="modalPartMeta">Rak · Sisa stok</p>
+
+    <div class="toggle-row">
+      <button class="toggle-btn active keluar" id="toggleKeluar" type="button">Ambil part (keluar)</button>
+      <button class="toggle-btn masuk" id="toggleMasuk" type="button">Tambah stok (masuk)</button>
+    </div>
+
+    <div class="field">
+      <label for="inputEmail">Email kamu</label>
+      <input id="inputEmail" type="email" placeholder="nama@perusahaan.com">
+    </div>
+    <div class="field">
+      <label for="inputQty">Jumlah</label>
+      <input id="inputQty" type="number" min="1" step="1" value="1">
+    </div>
+    <div class="field">
+      <label for="inputNote">Catatan (opsional)</label>
+      <textarea id="inputNote" rows="2" placeholder="Contoh: untuk perbaikan mesin blow #3"></textarea>
+    </div>
+    <p class="field-error" id="modalError"></p>
+
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="modalCancelBtn" type="button">Batal</button>
+      <button class="btn btn-primary" id="modalSubmitBtn" type="button">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div id="addPartModalOverlay" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2>Tambah Part Baru</h2>
+    <p class="modal-sub">Buat entri baru kalau part-nya belum ada di daftar</p>
+
+    <div class="field">
+      <label for="newPartRak">Rak</label>
+      <input id="newPartRak" list="rakOptions" placeholder="Contoh: D4, C1, di lantai">
+      <datalist id="rakOptions"></datalist>
+    </div>
+    <div class="field">
+      <label for="newPartName">Nama part</label>
+      <input id="newPartName" placeholder="Contoh: bearing 6204 ZZ">
+    </div>
+    <div class="field">
+      <label for="newPartQty">Qty awal</label>
+      <input id="newPartQty" type="number" min="0" step="1" value="1">
+    </div>
+    <div class="field">
+      <label for="newPartSatuan">Satuan</label>
+      <input id="newPartSatuan" placeholder="Contoh: pc, set, box, meter">
+    </div>
+    <div class="field">
+      <label for="newPartEmail">Email kamu</label>
+      <input id="newPartEmail" type="email" placeholder="nama@perusahaan.com">
+    </div>
+    <div class="field">
+      <label for="newPartNote">Catatan (opsional)</label>
+      <textarea id="newPartNote" rows="2" placeholder="Contoh: part baru dari pembelian PO-1234"></textarea>
+    </div>
+    <p class="field-error" id="addPartError"></p>
+
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="addPartCancelBtn" type="button">Batal</button>
+      <button class="btn btn-primary" id="addPartSubmitBtn" type="button">Simpan Part</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'workshop_inventory_v2';
+
+// ===== Konfigurasi database (WAJIB diisi sebelum pakai) =====
+// Ganti dengan URL Realtime Database dari Firebase Console kamu.
+// Contoh: 'https://gudang-part-workshop-default-rtdb.asia-southeast1.firebasedatabase.app'
+const FIREBASE_DB_URL = 'ISI_URL_FIREBASE_DI_SINI';
+// Database Secret dari Project Settings > Service accounts > Database secrets.
+// Rules di Firebase di-set ".read": false / ".write": false, jadi cuma request
+// yang nyelipin secret ini (lewat ?auth=) yang bisa tembus.
+const FIREBASE_DB_SECRET = 'ISI_DATABASE_SECRET_DI_SINI';
+
+// Polyfill window.storage supaya app ini (yang aslinya dibuat pakai
+// storage khusus Claude artifact) bisa nyimpen data ke Firebase saat
+// di-host di luar Claude (GitHub Pages, dll).
+window.storage = {
+  async get(key, shared){
+    const res = await fetch(`${FIREBASE_DB_URL}/${encodeURIComponent(key)}.json?auth=${FIREBASE_DB_SECRET}`);
+    if(!res.ok) throw new Error('Gagal ambil data dari database');
+    const data = await res.json();
+    if(data === null || data === undefined || data.value === undefined){
+      throw new Error('Data belum ada di database');
+    }
+    return { key, value: data.value, shared: !!shared };
+  },
+  async set(key, value, shared){
+    const res = await fetch(`${FIREBASE_DB_URL}/${encodeURIComponent(key)}.json?auth=${FIREBASE_DB_SECRET}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value, updatedAt: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error('Gagal simpan data ke database');
+    return { key, value, shared: !!shared };
+  }
+};
+
+// rak, part, qtyAwal, satuan, [qtyDiambilSeed, tanggalMasukSeed, tanggalKeluarSeed, picSeed]
+const INITIAL_PARTS = [
+  {rak:'D4', part:'Tubing 6', qtyAwal:9, satuan:'box'},
+  {rak:'D4', part:'Pipa 2 inch', qtyAwal:5, satuan:'meter'},
+  {rak:'D4', part:'Hose high temp IJK', qtyAwal:4, satuan:'meter'},
+  {rak:'D4', part:'Siku SS', qtyAwal:1, satuan:'pc'},
+  {rak:'D3', part:'Hand dryer', qtyAwal:1, satuan:'set'},
+  {rak:'D3', part:'PC TGK bekas', qtyAwal:3, satuan:'set'},
+  {rak:'D3', part:'Reflektor blow', qtyAwal:10, satuan:'pc'},
+  {rak:'D3', part:'Curtain shrink', qtyAwal:1, satuan:'set'},
+  {rak:'D3', part:'Resistance vulcaterm sidel', qtyAwal:1, satuan:'pc'},
+  {rak:'D3', part:'Guide teflon', qtyAwal:1, satuan:'set'},
+  {rak:'D3', part:'Filter catridge paper', qtyAwal:4, satuan:'pc'},
+  {rak:'D3', part:'Filter element piovan', qtyAwal:1, satuan:'pc'},
+  {rak:'D3', part:'Prefilter', qtyAwal:1, satuan:'pc'},
+  {rak:'D3', part:'Flat filter', qtyAwal:3, satuan:'pc'},
+  {rak:'D2', part:'Control Valve', qtyAwal:1, satuan:'set'},
+  {rak:'D2', part:'Hose IJK', qtyAwal:2, satuan:'pc'},
+  {rak:'D2', part:'Gasket Dryer merah high temp besar', qtyAwal:3, satuan:'pc'},
+  {rak:'D2', part:'Kabel offlex 1x20m', qtyAwal:1, satuan:'roll'},
+  {rak:'D2', part:'Kabel lan orange', qtyAwal:15, satuan:'meter'},
+  {rak:'D2', part:'Kabel sambungan hijau', qtyAwal:1, satuan:'pc'},
+  {rak:'D2', part:'Kabel hitam untuk oven blow', qtyAwal:1, satuan:'roll'},
+  {rak:'D2', part:'Kabel kamera bekas tgk hijau orange putih kuning', qtyAwal:1, satuan:'set'},
+  {rak:'D1', part:'Hose chiller merah', qtyAwal:1, satuan:'pc'},
+  {rak:'D1', part:'Hose 1/2 untuk angin', qtyAwal:6, satuan:'meter'},
+  {rak:'D1', part:'Selang tube 8mm hijau dan biru', qtyAwal:10, satuan:'meter'},
+  {rak:'D1', part:'Duct kabel hitam', qtyAwal:1, satuan:'pc'},
+  {rak:'D1', part:'Pelipit cv necj hank flexlink', qtyAwal:1, satuan:'set'},
+  {rak:'D1', part:'Aneka bearing', qtyAwal:1, satuan:'container'},
+  {rak:'D1', part:'Spiral kabel putih', qtyAwal:5, satuan:'pc'},
+  {rak:'D1', part:'Aneka kabel sisa dan seling baja', qtyAwal:1, satuan:'container'},
+  {rak:'di lantai', part:'Rotari joint Rix Box Biru bekas', qtyAwal:1, satuan:'pc'},
+  {rak:'di lantai', part:'Rotari joint Takeda bekas', qtyAwal:2, satuan:'pc'},
+  {rak:'di lantai', part:'Pump recovery csop shikoku toste bekas', qtyAwal:1, satuan:'set'},
+  {rak:'di lantai', part:'Exhaust fan aset aio ALMO bekas', qtyAwal:1, satuan:'set'},
+  {rak:'di lantai', part:'Blower sanyu bekas water removal OC2', qtyAwal:2, satuan:'set'},
+  {rak:'di lantai', part:'Roller separator magazine krones baru', qtyAwal:2, satuan:'pc'},
+  {rak:'C1', part:'Motor gear box bekas sumitomo', qtyAwal:5, satuan:'pc'},
+  {rak:'C1', part:'Motor gear box GM-SHYPN_RH Baru', qtyAwal:1, satuan:'pc'},
+  {rak:'C1', part:'Motor gear box SEW hitam krones', qtyAwal:1, satuan:'pc'},
+  {rak:'C1', part:'Chain OCM 60-1RP', qtyAwal:6, satuan:'box'},
+  {rak:'C1', part:'Top cahin offline', qtyAwal:3, satuan:'box'},
+  {rak:'C1', part:'Kabel camera bekas palstik pink', qtyAwal:1, satuan:'set'},
+  {rak:'C1', part:'Sp tool blow rotary joint Sidel', qtyAwal:1, satuan:'set'},
+  {rak:'C1', part:'Base mold bekas', qtyAwal:4, satuan:'set'},
+  {rak:'C1', part:'Chain Daichain 80-2Rx10FT 120 link/box', qtyAwal:2, satuan:'box'},
+  {rak:'C2', part:'Motor vaccum bekas blow', qtyAwal:1, satuan:'set'},
+  {rak:'C2', part:'Servo drive bekas filler Oc1 type MR-J3-15KB', qtyAwal:1, satuan:'set'},
+  {rak:'C2', part:'Grease perma so70', qtyAwal:2, satuan:'pc'},
+  {rak:'C2', part:'Pressure spring krones', qtyAwal:4, satuan:'pc'},
+  {rak:'C2', part:'Mech seal m1127 new', qtyAwal:1, satuan:'pc'},
+  {rak:'C2', part:'Guide teflon cv kanesho', qtyAwal:6, satuan:'pc'},
+  {rak:'C2', part:'Connector siemens', qtyAwal:1, satuan:'set'},
+  {rak:'C2', part:'Mech seal bekas VP130', qtyAwal:1, satuan:'set'},
+  {rak:'C3', part:'Circuit breaker c10n3tm040', qtyAwal:1, satuan:'pc'},
+  {rak:'C3', part:'Servo motor Fuji Capper GYS101DC1', qtyAwal:2, satuan:'pc'},
+  {rak:'C3', part:'Inverter FR A720-22K Mitsubishi', qtyAwal:1, satuan:'pc'},
+  {rak:'C3', part:'Static converter ACOPOS krones bekas', qtyAwal:1, satuan:'pc'},
+  {rak:'C3', part:'Hub edge device bekas', qtyAwal:1, satuan:'pc'},
+  {rak:'C3', part:'IPC Husky Bekas EX SKB', qtyAwal:1, satuan:'pc'},
+  {rak:'B3', part:'Motor servo BPD SCN6-050-100-B-M', qtyAwal:5, satuan:'pc'},
+  {rak:'B3', part:'Piston cylinder CDG1BA50', qtyAwal:1, satuan:'pc'},
+  {rak:'B3', part:'Part campuran ijk filter, Oring, linier bearing', qtyAwal:1, satuan:'dos'},
+  {rak:'B2', part:'Motor servo axis ABB bekas offline camera', qtyAwal:1, satuan:'set'},
+  {rak:'B2', part:'Consumable part filter Injeksi', qtyAwal:1, satuan:'dos'},
+  {rak:'B2', part:'Inverter Danfos 20kw HVAC bekas repairan', qtyAwal:1, satuan:'pc'},
+  {rak:'B1', part:'Part bekas generator camera inline TGK bin merah', qtyAwal:1, satuan:'set'},
+  {rak:'B1', part:'Pipa fabrikasi AUHT', qtyAwal:1, satuan:'pc'},
+  {rak:'B1', part:'Inverter FR-A840-22K-1', qtyAwal:1, satuan:'pc'},
+  {rak:'B1', part:'Inverter VFS15-4055PL-W', qtyAwal:1, satuan:'pc'},
+  {rak:'B1', part:'Nozzle adapter HPn 2746589 new', qtyAwal:1, satuan:'pc'},
+  {rak:'B1', part:'Aneka baut dan mur campuran bin kuning', qtyAwal:1, satuan:'container'},
+  {rak:'A1', part:'Chain OCM Ansi 80-2RP', qtyAwal:2, satuan:'box'},
+  {rak:'A1', part:'Shaft paletizer by JMP', qtyAwal:1, satuan:'pc'},
+  {rak:'A1', part:'Pillow blok FL 216 NTN', qtyAwal:1, satuan:'pc'},
+  {rak:'A1', part:'Sprocket palletizer', qtyAwal:1, satuan:'pc'},
+  {rak:'A1', part:'Pillowblok FYH FL218', qtyAwal:1, satuan:'pc'},
+  {rak:'A1', part:'Adapter servo motor IJK SN 5415753', qtyAwal:1, satuan:'pc'},
+  {rak:'A1', part:'Motor extractionhod blow hijau bekas OC2', qtyAwal:1, satuan:'pc'},
+  {rak:'A1', part:'Tool cramping pipa warna hijau', qtyAwal:1, satuan:'set'},
+  {rak:'A1', part:'Tool jack pneumatic preparasi', qtyAwal:2, satuan:'pc'},
+  {rak:'A1', part:'Hose hitam IJK', qtyAwal:1, satuan:'pc'},
+  {rak:'A1', part:'Linier bearing kanesho', qtyAwal:1, satuan:'pc'},
+  {rak:'A1', part:'Shaft packer bekas dan lokal spare', qtyAwal:2, satuan:'pc'},
+  {rak:'A1', part:'Linier bearing IJK moving platen', qtyAwal:1, satuan:'pc'},
+  {rak:'A2', part:'Servo motor ijk HPN 4526022', qtyAwal:1, satuan:'pc'},
+  {rak:'A2', part:'Spot check preparasi', qtyAwal:20, satuan:'dos'},
+  {rak:'A3', part:'Brix meter iwai bekas', qtyAwal:1, satuan:'set'},
+  {rak:'A3', part:'Pinion brake set sidel', qtyAwal:6, satuan:'dos'},
+  {rak:'A3', part:'Manual book shikoku', qtyAwal:1, satuan:'dos'},
+  {rak:'A4', part:'Aneka hose', qtyAwal:1, satuan:'rak'},
+  {rak:'A4', part:'Terpal', qtyAwal:2, satuan:'pc'},
+  {rak:'I5', part:'Aneka hose ijk', qtyAwal:1, satuan:'rak'},
+  {rak:'I4', part:'Remote pendant', qtyAwal:1, satuan:'pc'},
+  {rak:'I4', part:'Positioner azbil R-3DJJP-41-041', qtyAwal:1, satuan:'pc'},
+  {rak:'I4', part:'Positioner azbil R-3DJJP-41-051', qtyAwal:1, satuan:'pc'},
+  {rak:'I4', part:'Hose cip adapter bekas', qtyAwal:5, satuan:'pc'},
+  {rak:'I4', part:'CIP Cup bekas', qtyAwal:1, satuan:'pc'},
+  {rak:'I4', part:'Igus plate', qtyAwal:2, satuan:'pc'},
+  {rak:'I3', part:'Grease perma sf01', qtyAwal:16, satuan:'pc'},
+  {rak:'I3', part:'Teflon plate', qtyAwal:3, satuan:'pc'},
+  {rak:'I3', part:'Roller shrink', qtyAwal:100, satuan:'pc'},
+  {rak:'I3', part:'Belt pitc maker', qtyAwal:2, satuan:'pc'},
+  {rak:'I3', part:'Pillow blok UCF206J', qtyAwal:1, satuan:'pc'},
+  {rak:'I3', part:'Bearing LR5205', qtyAwal:5, satuan:'pc'},
+  {rak:'I3', part:'Cam divider sanyu OC2', qtyAwal:1, satuan:'pc'},
+  {rak:'I3', part:'Fork blow', qtyAwal:4, satuan:'pc'},
+  {rak:'I3', part:'Battery Q7batN', qtyAwal:2, satuan:'pc'},
+  {rak:'I3', part:'Joint drat sidel 40 bar', qtyAwal:1, satuan:'dos'},
+  {rak:'I1', part:'Generator Xray bekas OC2', qtyAwal:1, satuan:'set', tanggalMasukSeed:'2026-09-14T09:00:00', picSeed:'Suhar'},
+  {rak:'H5', part:'Clamp pipa dryer', qtyAwal:4, satuan:'pc'},
+  {rak:'H5', part:'Terpal', qtyAwal:4, satuan:'pc'},
+  {rak:'H4', part:'BeltFSB ropanyl EM3/1 00+02', qtyAwal:1, satuan:'pc'},
+  {rak:'H3', part:'Seal kit blow nozle campuran sidel', qtyAwal:1, satuan:'dos'},
+  {rak:'H3', part:'Worm gear', qtyAwal:1, satuan:'pc'},
+  {rak:'H2', part:'Gear conveyor gula preparasi', qtyAwal:1, satuan:'dos'},
+  {rak:'H2', part:'Housing magnetic trap ijk', qtyAwal:1, satuan:'set'},
+  {rak:'H1', part:'Aneka belt bin biru', qtyAwal:1, satuan:'container'},
+  {rak:'H1', part:'Aneka clamp ferrule bin biru', qtyAwal:1, satuan:'container'},
+  {rak:'G5', part:'Terpal', qtyAwal:1, satuan:'pc'},
+  {rak:'G4', part:'Balon accumulator IJK', qtyAwal:1, satuan:'set'},
+  {rak:'G4', part:'Adapter bearing ijk', qtyAwal:1, satuan:'pc'},
+  {rak:'G4', part:'Filter topi dryer', qtyAwal:1, satuan:'pc'},
+  {rak:'G2', part:'Spare part IJK Short heiht 900ml', qtyAwal:14, satuan:'dos', qtyDiambilSeed:1, tanggalMasukSeed:'2026-09-10T09:00:00', picSeed:'Ihwan'},
+  {rak:'G4', part:'Noise filter', qtyAwal:8, satuan:'pc'},
+  {rak:'G3', part:'Magnetic trap', qtyAwal:1, satuan:'pc'},
+  {rak:'G3', part:'Temposonic HPN 900343793', qtyAwal:1, satuan:'pc'},
+  {rak:'G3', part:'Special tool rotary electric laty sidel', qtyAwal:1, satuan:'pc'},
+  {rak:'G1', part:'Top chain sisa container kuning', qtyAwal:1, satuan:'container'},
+  {rak:'G1', part:'Part ARS Samindo', qtyAwal:2, satuan:'plastik'},
+  {rak:'F4', part:'Filter Hepa Blow', qtyAwal:4, satuan:'pc'},
+  {rak:'F3', part:'Gasket agitator tanki prep', qtyAwal:1, satuan:'dos'},
+  {rak:'F3', part:'Motor damper KGM', qtyAwal:4, satuan:'pc'},
+  {rak:'F3', part:'Gear kayu besar label', qtyAwal:1, satuan:'pc'},
+  {rak:'F3', part:'Gear kayu base plate label bekas', qtyAwal:23, satuan:'pc'},
+  {rak:'F3', part:'Sisa part OH seal kit Shikoku OC1', qtyAwal:2, satuan:'dos'},
+  {rak:'F3', part:'Plate Hisaka', qtyAwal:1, satuan:'set'},
+  {rak:'F3', part:'Roller Pitch maker sanyu', qtyAwal:4, satuan:'pc'},
+  {rak:'F2', part:'Top chain K800 -2', qtyAwal:4, satuan:'box'},
+  {rak:'F2', part:'Gear oven fork sidel', qtyAwal:1, satuan:'pc'},
+  {rak:'F2', part:'Shaft starwheel sacmi', qtyAwal:2, satuan:'pc'},
+  {rak:'F2', part:'Shaft shrink', qtyAwal:1, satuan:'pc'},
+  {rak:'F2', part:'Filter mesh 400', qtyAwal:2, satuan:'pc'},
+  {rak:'F2', part:'Filter mesh 200', qtyAwal:1, satuan:'pc'},
+  {rak:'F2', part:'Blower siemens 3 kw', qtyAwal:1, satuan:'pc'},
+  {rak:'E1', part:'Linier bearing IJK moving platen', qtyAwal:1, satuan:'pc'},
+  {rak:'E1', part:'Linier bearing moving platen', qtyAwal:4, satuan:'pc'},
+  {rak:'E1', part:'Streching down cam', qtyAwal:1, satuan:'pc'},
+  {rak:'E2', part:'Plate press filter', qtyAwal:7, satuan:'pc'},
+  {rak:'E2', part:'Grease mobilux paste TA', qtyAwal:1, satuan:'can'},
+  {rak:'E2', part:'Oli mobil gear 600XP 320', qtyAwal:1, satuan:'can'},
+  {rak:'E2', part:'Oli TMO 500 kyodo sushi', qtyAwal:1, satuan:'can'},
+  {rak:'E3', part:'Thermo gauge tank prep', qtyAwal:3, satuan:'pc'},
+  {rak:'E3', part:'Pump predis', qtyAwal:1, satuan:'pc'},
+  {rak:'E3', part:'Aneka gasket plate preparasi bin biru', qtyAwal:1, satuan:'container'},
+  {rak:'E4', part:'Conveyor camera offline', qtyAwal:6, satuan:'set'},
+  {rak:'E4', part:'Guide conveyor', qtyAwal:1, satuan:'set'},
+  {rak:'di lantai', part:'Console mold blow bekas oc1', qtyAwal:1, satuan:'set'},
+  {rak:'E2', part:'Flat belt caser', qtyAwal:1, satuan:'pc'},
+];
+
+const RAK_GROUP_COLORS = {
+  A:'#3465A4', B:'#3F7D58', C:'#C08A2E', D:'#7A4C8F', E:'#B3261E',
+  F:'#2B7A78', G:'#8C5B3F', H:'#4A6FA5', I:'#6B8E23', LANTAI:'#9C4F96'
+};
+function rakGroupKey(rak){
+  return rak.trim().toLowerCase() === 'di lantai' ? 'LANTAI' : rak.trim().charAt(0).toUpperCase();
+}
+function rakColor(rak){
+  return RAK_GROUP_COLORS[rakGroupKey(rak)] || '#586170';
+}
+
+function keyOf(rak, part){
+  return (rak.trim() + '|' + part.trim()).toLowerCase();
+}
+
+function mergeMissingParts(st){
+  if(!st.parts) st.parts = [];
+  if(!st.transactions) st.transactions = [];
+  const existingKeys = new Set(st.parts.map(p => keyOf(p.rak, p.part)));
+  let maxNum = 0;
+  st.parts.forEach(p=>{
+    const m = /^p(\d+)$/.exec(p.id);
+    if(m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+  });
+  let added = false;
+  INITIAL_PARTS.forEach(seed=>{
+    const k = keyOf(seed.rak, seed.part);
+    if(!existingKeys.has(k)){
+      maxNum++;
+      st.parts.push({
+        id: 'p'+maxNum,
+        rak: seed.rak,
+        part: seed.part,
+        qtyAwal: seed.qtyAwal,
+        satuan: seed.satuan,
+        qtyDiambil: seed.qtyDiambilSeed || 0,
+        tanggalMasuk: seed.tanggalMasukSeed || null,
+        tanggalKeluar: seed.tanggalKeluarSeed || null,
+        pic: seed.picSeed || null
+      });
+      existingKeys.add(k);
+      added = true;
+    }
+  });
+  return added;
+}
+
+let state = null;
+let currentView = 'stock';
+let currentRakFilter = 'ALL';
+let searchTerm = '';
+let modalPartId = null;
+let modalType = 'keluar';
+let isSaving = false;
+
+const el = (id) => document.getElementById(id);
+
+function showToast(msg){
+  const t = el('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+async function loadState(){
+  let fetched = null;
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    if(res && res.value) fetched = JSON.parse(res.value);
+  }catch(e){
+    fetched = null;
+  }
+  state = fetched || { parts: [], transactions: [] };
+  const added = mergeMissingParts(state);
+  if(added || !fetched){
+    try{ await saveState(); }
+    catch(e){ console.error('Gagal menyimpan data awal', e); }
+  }
+}
+
+async function saveState(){
+  await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
+}
+
+function fmtDateTime(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) + ' WIB';
+}
+
+function sisaStok(p){
+  return p.qtyAwal - p.qtyDiambil;
+}
+
+function uniqueRaks(){
+  const set = new Set(state.parts.map(p=>p.rak.trim()));
+  return Array.from(set).sort((a,b)=> a.localeCompare(b, undefined, {numeric:true, sensitivity:'base'}));
+}
+
+function renderRakFilters(){
+  const raks = ['ALL', ...uniqueRaks()];
+  const wrap = el('rakFilters');
+  wrap.innerHTML = '';
+  raks.forEach(r=>{
+    const btn = document.createElement('button');
+    btn.className = 'rak-chip' + (currentRakFilter===r ? ' active' : '');
+    btn.textContent = r==='ALL' ? 'Semua rak' : r;
+    btn.onclick = ()=>{ currentRakFilter = r; renderRakFilters(); renderStockList(); };
+    wrap.appendChild(btn);
+  });
+}
+
+function renderStockList(){
+  const wrap = el('partList');
+  let parts = state.parts.filter(p=>{
+    const matchRak = currentRakFilter==='ALL' || p.rak===currentRakFilter;
+    const matchSearch = p.part.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchRak && matchSearch;
+  });
+
+  el('resultCount').textContent = parts.length + ' dari ' + state.parts.length + ' part';
+
+  if(parts.length===0){
+    wrap.innerHTML = '<div class="empty-state">Tidak ada part yang cocok.</div>';
+    return;
+  }
+
+  wrap.innerHTML = '';
+  parts.forEach(p=>{
+    const sisa = sisaStok(p);
+    const row = document.createElement('div');
+    row.className = 'part-row';
+    row.style.borderLeftColor = rakColor(p.rak);
+
+    const metaBits = [];
+    if(p.tanggalKeluar) metaBits.push('Terakhir diambil <b>'+fmtDateTime(p.tanggalKeluar)+'</b> oleh <b>'+escapeHtml(p.pic||'-')+'</b>');
+    else if(p.tanggalMasuk) metaBits.push('Masuk <b>'+fmtDateTime(p.tanggalMasuk)+'</b> oleh <b>'+escapeHtml(p.pic||'-')+'</b>');
+    else metaBits.push('Belum ada aktivitas');
+
+    row.innerHTML = `
+      <div class="part-main">
+        <span class="part-tag">${escapeHtml(p.rak)}</span><span class="part-name">${escapeHtml(p.part)}</span>
+        <div class="part-meta">${metaBits.join(' · ')}</div>
+      </div>
+      <div class="part-stock">
+        <div class="stock-num ${sisa<=1 ? 'low':'ok'}">${sisa}</div>
+        <div class="stock-unit">${escapeHtml(p.satuan)} tersisa</div>
+      </div>
+      <div class="part-actions">
+        <button class="btn btn-ghost" data-action="masuk" data-id="${p.id}">+ Stok</button>
+        <button class="btn btn-primary" data-action="keluar" data-id="${p.id}" ${sisa<=0?'disabled':''}>Ambil</button>
+      </div>
+    `;
+    wrap.appendChild(row);
+  });
+
+  wrap.querySelectorAll('button[data-action]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openModal(btn.dataset.id, btn.dataset.action));
+  });
+}
+
+function renderHistoryList(){
+  const wrap = el('historyList');
+  const txs = [...state.transactions].sort((a,b)=> new Date(b.ts) - new Date(a.ts));
+  if(txs.length===0){
+    wrap.innerHTML = '<div class="empty-state">Belum ada aktivitas tercatat.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  txs.forEach(tx=>{
+    const row = document.createElement('div');
+    row.className = 'tx-row';
+    const txIcon = tx.type==='keluar' ? '↓' : (tx.type==='baru' ? '+' : '↑');
+    const txLabel = tx.type==='keluar' ? 'Ambil' : (tx.type==='baru' ? 'Part baru' : 'Tambah stok');
+    row.innerHTML = `
+      <div class="tx-icon ${tx.type}">${txIcon}</div>
+      <div class="tx-body">
+        <div class="tx-title">${txLabel} ${tx.qty} ${escapeHtml(tx.satuan)} — ${escapeHtml(tx.partName)} <span class="part-tag">${escapeHtml(tx.rak)}</span></div>
+        <div class="tx-sub">${escapeHtml(tx.email)}${tx.note ? ' · '+escapeHtml(tx.note) : ''}</div>
+      </div>
+      <div class="tx-time">${fmtDateTime(tx.ts)}</div>
+    `;
+    wrap.appendChild(row);
+  });
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str==null ? '' : String(str);
+  return d.innerHTML;
+}
+
+function openModal(partId, type){
+  modalPartId = partId;
+  modalType = type;
+  const p = state.parts.find(x=>x.id===partId);
+  el('modalPartName').textContent = p.part;
+  el('modalPartMeta').textContent = p.rak + ' · sisa ' + sisaStok(p) + ' ' + p.satuan;
+  el('inputEmail').value = '';
+  el('inputQty').value = 1;
+  el('inputNote').value = '';
+  el('modalError').style.display = 'none';
+  setToggle(type);
+  el('modalOverlay').style.display = 'flex';
+  setTimeout(()=> el('inputEmail').focus(), 50);
+}
+
+function closeModal(){
+  el('modalOverlay').style.display = 'none';
+  modalPartId = null;
+}
+
+function setToggle(type){
+  modalType = type;
+  el('toggleKeluar').classList.toggle('active', type==='keluar');
+  el('toggleMasuk').classList.toggle('active', type==='masuk');
+}
+
+async function submitModal(){
+  if(isSaving) return;
+  const p = state.parts.find(x=>x.id===modalPartId);
+  const email = el('inputEmail').value.trim();
+  const qty = parseInt(el('inputQty').value, 10);
+  const note = el('inputNote').value.trim();
+  const errEl = el('modalError');
+
+  if(!email || !email.includes('@')){
+    errEl.textContent = 'Masukkan email yang valid.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(!qty || qty < 1){
+    errEl.textContent = 'Jumlah harus lebih dari 0.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(modalType==='keluar' && qty > sisaStok(p)){
+    errEl.textContent = 'Jumlah melebihi sisa stok (' + sisaStok(p) + ' ' + p.satuan + ').';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  isSaving = true;
+  el('modalSubmitBtn').textContent = 'Menyimpan...';
+  el('modalSubmitBtn').disabled = true;
+
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    if(res && res.value) state = JSON.parse(res.value);
+  }catch(e){ /* keep local state if fetch fails */ }
+
+  const fresh = state.parts.find(x=>x.id===modalPartId);
+  const now = new Date().toISOString();
+
+  if(modalType==='keluar'){
+    if(qty > sisaStok(fresh)){
+      errEl.textContent = 'Stok sudah berubah, sisa sekarang ' + sisaStok(fresh) + '. Coba lagi.';
+      errEl.style.display = 'block';
+      isSaving = false;
+      el('modalSubmitBtn').textContent = 'Simpan';
+      el('modalSubmitBtn').disabled = false;
+      renderStockList();
+      return;
+    }
+    fresh.qtyDiambil += qty;
+    fresh.tanggalKeluar = now;
+    fresh.pic = email;
+  } else {
+    fresh.qtyAwal += qty;
+    fresh.tanggalMasuk = now;
+    fresh.pic = email;
+  }
+
+  state.transactions.push({
+    id: 'tx'+Date.now()+Math.random().toString(36).slice(2,6),
+    ts: now,
+    partId: fresh.id,
+    partName: fresh.part,
+    rak: fresh.rak,
+    satuan: fresh.satuan,
+    type: modalType,
+    qty: qty,
+    email: email,
+    note: note
+  });
+
+  try{
+    await saveState();
+    showToast(modalType==='keluar' ? 'Tercatat: diambil oleh '+email : 'Tercatat: stok ditambah oleh '+email);
+    closeModal();
+    renderStockList();
+    renderHistoryList();
+  }catch(e){
+    errEl.textContent = 'Gagal menyimpan. Periksa koneksi lalu coba lagi.';
+    errEl.style.display = 'block';
+  }
+
+  isSaving = false;
+  el('modalSubmitBtn').textContent = 'Simpan';
+  el('modalSubmitBtn').disabled = false;
+}
+
+function openAddPartModal(){
+  el('newPartRak').value = '';
+  el('newPartName').value = '';
+  el('newPartQty').value = 1;
+  el('newPartSatuan').value = '';
+  el('newPartEmail').value = '';
+  el('newPartNote').value = '';
+  el('addPartError').style.display = 'none';
+
+  const datalist = el('rakOptions');
+  datalist.innerHTML = '';
+  uniqueRaks().forEach(r=>{
+    const opt = document.createElement('option');
+    opt.value = r;
+    datalist.appendChild(opt);
+  });
+
+  el('addPartModalOverlay').style.display = 'flex';
+  setTimeout(()=> el('newPartRak').focus(), 50);
+}
+
+function closeAddPartModal(){
+  el('addPartModalOverlay').style.display = 'none';
+}
+
+async function submitAddPart(){
+  if(isSaving) return;
+  const rak = el('newPartRak').value.trim();
+  const partName = el('newPartName').value.trim();
+  const qty = parseInt(el('newPartQty').value, 10);
+  const satuan = el('newPartSatuan').value.trim();
+  const email = el('newPartEmail').value.trim();
+  const note = el('newPartNote').value.trim();
+  const errEl = el('addPartError');
+
+  if(!rak){ errEl.textContent = 'Rak wajib diisi.'; errEl.style.display='block'; return; }
+  if(!partName){ errEl.textContent = 'Nama part wajib diisi.'; errEl.style.display='block'; return; }
+  if(isNaN(qty) || qty < 0){ errEl.textContent = 'Qty awal tidak valid.'; errEl.style.display='block'; return; }
+  if(!satuan){ errEl.textContent = 'Satuan wajib diisi.'; errEl.style.display='block'; return; }
+  if(!email || !email.includes('@')){ errEl.textContent = 'Masukkan email yang valid.'; errEl.style.display='block'; return; }
+  errEl.style.display = 'none';
+
+  isSaving = true;
+  el('addPartSubmitBtn').textContent = 'Menyimpan...';
+  el('addPartSubmitBtn').disabled = true;
+
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    if(res && res.value) state = JSON.parse(res.value);
+  }catch(e){ /* keep local state if fetch fails */ }
+
+  const dupKey = keyOf(rak, partName);
+  if(state.parts.some(p=> keyOf(p.rak, p.part) === dupKey)){
+    errEl.textContent = 'Part dengan rak dan nama yang sama sudah ada.';
+    errEl.style.display = 'block';
+    isSaving = false;
+    el('addPartSubmitBtn').textContent = 'Simpan Part';
+    el('addPartSubmitBtn').disabled = false;
+    return;
+  }
+
+  let maxNum = 0;
+  state.parts.forEach(p=>{
+    const m = /^p(\d+)$/.exec(p.id);
+    if(m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+  });
+  const now = new Date().toISOString();
+  const newPart = {
+    id: 'p'+(maxNum+1),
+    rak: rak,
+    part: partName,
+    qtyAwal: qty,
+    satuan: satuan,
+    qtyDiambil: 0,
+    tanggalMasuk: now,
+    tanggalKeluar: null,
+    pic: email
+  };
+  state.parts.push(newPart);
+
+  state.transactions.push({
+    id: 'tx'+Date.now()+Math.random().toString(36).slice(2,6),
+    ts: now,
+    partId: newPart.id,
+    partName: newPart.part,
+    rak: newPart.rak,
+    satuan: newPart.satuan,
+    type: 'baru',
+    qty: qty,
+    email: email,
+    note: note
+  });
+
+  try{
+    await saveState();
+    showToast('Part baru ditambahkan: '+partName);
+    closeAddPartModal();
+    renderRakFilters();
+    renderStockList();
+    renderHistoryList();
+  }catch(e){
+    errEl.textContent = 'Gagal menyimpan. Periksa koneksi lalu coba lagi.';
+    errEl.style.display = 'block';
+  }
+
+  isSaving = false;
+  el('addPartSubmitBtn').textContent = 'Simpan Part';
+  el('addPartSubmitBtn').disabled = false;
+}
+
+async function refreshFromStorage(silent){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    if(res && res.value) state = JSON.parse(res.value);
+    mergeMissingParts(state);
+    renderRakFilters();
+    if(currentView==='stock') renderStockList(); else renderHistoryList();
+    if(!silent) showToast('Data terbaru dimuat.');
+  }catch(e){
+    if(!silent) showToast('Gagal sinkron. Coba lagi.');
+  }
+}
+
+function switchView(view){
+  currentView = view;
+  el('viewStockBtn').classList.toggle('active', view==='stock');
+  el('viewHistoryBtn').classList.toggle('active', view==='history');
+  el('stockView').style.display = view==='stock' ? 'block' : 'none';
+  el('historyView').style.display = view==='history' ? 'block' : 'none';
+  if(view==='history') renderHistoryList();
+}
+
+async function init(){
+  await loadState();
+  renderRakFilters();
+  renderStockList();
+
+  el('viewStockBtn').addEventListener('click', ()=> switchView('stock'));
+  el('viewHistoryBtn').addEventListener('click', ()=> switchView('history'));
+  el('refreshBtn').addEventListener('click', ()=> refreshFromStorage(false));
+  el('searchInput').addEventListener('input', (e)=>{ searchTerm = e.target.value; renderStockList(); });
+  el('toggleKeluar').addEventListener('click', ()=> setToggle('keluar'));
+  el('toggleMasuk').addEventListener('click', ()=> setToggle('masuk'));
+  el('modalCancelBtn').addEventListener('click', closeModal);
+  el('modalSubmitBtn').addEventListener('click', submitModal);
+  el('modalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='modalOverlay') closeModal(); });
+
+  el('addPartBtn').addEventListener('click', openAddPartModal);
+  el('addPartCancelBtn').addEventListener('click', closeAddPartModal);
+  el('addPartSubmitBtn').addEventListener('click', submitAddPart);
+  el('addPartModalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='addPartModalOverlay') closeAddPartModal(); });
+
+  setInterval(()=>{
+    if(el('modalOverlay').style.display==='none' && el('addPartModalOverlay').style.display==='none'){
+      refreshFromStorage(true);
+    }
+  }, 10000);
+}
+
+init();
+</script>
+</body>
+</html>
