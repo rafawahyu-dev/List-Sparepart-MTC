@@ -464,14 +464,29 @@ function showToast(msg){
   showToast._timer = setTimeout(()=> t.classList.remove('show'), 2600);
 }
 
+async function fetchFirebaseState(){
+  const res = await fetch(FIREBASE_DB_URL + DATA_PATH + '.json');
+  if(!res.ok){
+    throw new Error('Firebase menolak akses (status '+res.status+'). Cek Rules sudah di-publish belum.');
+  }
+  const data = await res.json();
+  if(data && data.error){
+    throw new Error('Firebase error: '+data.error);
+  }
+  if(data && !Array.isArray(data.parts)){
+    // data ada tapi bentuknya bukan state yang valid, anggap kosong
+    return null;
+  }
+  return data;
+}
+
 async function loadState(){
   let fetched = null;
   try{
-    const res = await fetch(FIREBASE_DB_URL + DATA_PATH + '.json');
-    const data = await res.json();
-    if(data) fetched = data;
+    fetched = await fetchFirebaseState();
   }catch(e){
     fetched = null;
+    console.error('loadState error:', e.message);
   }
   state = fetched || { parts: [], transactions: [] };
   const added = mergeMissingParts(state);
@@ -670,60 +685,63 @@ async function submitModal(){
   el('modalSubmitBtn').disabled = true;
 
   try{
-    const res = await fetch(FIREBASE_DB_URL + DATA_PATH + '.json');
-    const data = await res.json();
-    if(data) state = data;
-  }catch(e){ /* keep local state if fetch fails */ }
-
-  const fresh = state.parts.find(x=>x.id===modalPartId);
-  const now = new Date().toISOString();
-
-  if(modalType==='keluar'){
-    if(qty > sisaStok(fresh)){
-      errEl.textContent = 'Stok sudah berubah, sisa sekarang ' + sisaStok(fresh) + '. Coba lagi.';
-      errEl.style.display = 'block';
-      isSaving = false;
-      el('modalSubmitBtn').textContent = 'Simpan';
-      el('modalSubmitBtn').disabled = false;
-      renderStockList();
-      return;
+    let fetchedOk = true;
+    try{
+      const fetched = await fetchFirebaseState();
+      if(fetched) state = fetched;
+    }catch(e){
+      fetchedOk = false;
+      console.error('Gagal ambil data terbaru:', e.message);
     }
-    fresh.qtyDiambil += qty;
-    fresh.tanggalKeluar = now;
-    fresh.pic = email;
-  } else {
-    fresh.qtyAwal += qty;
-    fresh.tanggalMasuk = now;
-    fresh.pic = email;
-  }
 
-  state.transactions.push({
-    id: 'tx'+Date.now()+Math.random().toString(36).slice(2,6),
-    ts: now,
-    partId: fresh.id,
-    partName: fresh.part,
-    rak: fresh.rak,
-    satuan: fresh.satuan,
-    type: modalType,
-    qty: qty,
-    email: email,
-    note: note
-  });
+    const fresh = state.parts.find(x=>x.id===modalPartId);
+    if(!fresh){
+      throw new Error('Part tidak ditemukan di data terbaru.');
+    }
+    const now = new Date().toISOString();
 
-  try{
+    if(modalType==='keluar'){
+      if(qty > sisaStok(fresh)){
+        errEl.textContent = 'Stok sudah berubah, sisa sekarang ' + sisaStok(fresh) + '. Coba lagi.';
+        errEl.style.display = 'block';
+        renderStockList();
+        return;
+      }
+      fresh.qtyDiambil += qty;
+      fresh.tanggalKeluar = now;
+      fresh.pic = email;
+    } else {
+      fresh.qtyAwal += qty;
+      fresh.tanggalMasuk = now;
+      fresh.pic = email;
+    }
+
+    state.transactions.push({
+      id: 'tx'+Date.now()+Math.random().toString(36).slice(2,6),
+      ts: now,
+      partId: fresh.id,
+      partName: fresh.part,
+      rak: fresh.rak,
+      satuan: fresh.satuan,
+      type: modalType,
+      qty: qty,
+      email: email,
+      note: note
+    });
+
     await saveState();
     showToast(modalType==='keluar' ? 'Tercatat: diambil oleh '+email : 'Tercatat: stok ditambah oleh '+email);
     closeModal();
     renderStockList();
     renderHistoryList();
   }catch(e){
-    errEl.textContent = 'Gagal menyimpan. Periksa koneksi lalu coba lagi.';
+    errEl.textContent = 'Gagal menyimpan: ' + e.message;
     errEl.style.display = 'block';
+  }finally{
+    isSaving = false;
+    el('modalSubmitBtn').textContent = 'Simpan';
+    el('modalSubmitBtn').disabled = false;
   }
-
-  isSaving = false;
-  el('modalSubmitBtn').textContent = 'Simpan';
-  el('modalSubmitBtn').disabled = false;
 }
 
 function openAddPartModal(){
@@ -773,54 +791,52 @@ async function submitAddPart(){
   el('addPartSubmitBtn').disabled = true;
 
   try{
-    const res = await fetch(FIREBASE_DB_URL + DATA_PATH + '.json');
-    const data = await res.json();
-    if(data) state = data;
-  }catch(e){ /* keep local state if fetch fails */ }
+    try{
+      const fetched = await fetchFirebaseState();
+      if(fetched) state = fetched;
+    }catch(e){
+      console.error('Gagal ambil data terbaru:', e.message);
+    }
 
-  const dupKey = keyOf(rak, partName);
-  if(state.parts.some(p=> keyOf(p.rak, p.part) === dupKey)){
-    errEl.textContent = 'Part dengan rak dan nama yang sama sudah ada.';
-    errEl.style.display = 'block';
-    isSaving = false;
-    el('addPartSubmitBtn').textContent = 'Simpan Part';
-    el('addPartSubmitBtn').disabled = false;
-    return;
-  }
+    const dupKey = keyOf(rak, partName);
+    if(state.parts.some(p=> keyOf(p.rak, p.part) === dupKey)){
+      errEl.textContent = 'Part dengan rak dan nama yang sama sudah ada.';
+      errEl.style.display = 'block';
+      return;
+    }
 
-  let maxNum = 0;
-  state.parts.forEach(p=>{
-    const m = /^p(\d+)$/.exec(p.id);
-    if(m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
-  });
-  const now = new Date().toISOString();
-  const newPart = {
-    id: 'p'+(maxNum+1),
-    rak: rak,
-    part: partName,
-    qtyAwal: qty,
-    satuan: satuan,
-    qtyDiambil: 0,
-    tanggalMasuk: now,
-    tanggalKeluar: null,
-    pic: email
-  };
-  state.parts.push(newPart);
+    let maxNum = 0;
+    state.parts.forEach(p=>{
+      const m = /^p(\d+)$/.exec(p.id);
+      if(m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+    });
+    const now = new Date().toISOString();
+    const newPart = {
+      id: 'p'+(maxNum+1),
+      rak: rak,
+      part: partName,
+      qtyAwal: qty,
+      satuan: satuan,
+      qtyDiambil: 0,
+      tanggalMasuk: now,
+      tanggalKeluar: null,
+      pic: email
+    };
+    state.parts.push(newPart);
 
-  state.transactions.push({
-    id: 'tx'+Date.now()+Math.random().toString(36).slice(2,6),
-    ts: now,
-    partId: newPart.id,
-    partName: newPart.part,
-    rak: newPart.rak,
-    satuan: newPart.satuan,
-    type: 'baru',
-    qty: qty,
-    email: email,
-    note: note
-  });
+    state.transactions.push({
+      id: 'tx'+Date.now()+Math.random().toString(36).slice(2,6),
+      ts: now,
+      partId: newPart.id,
+      partName: newPart.part,
+      rak: newPart.rak,
+      satuan: newPart.satuan,
+      type: 'baru',
+      qty: qty,
+      email: email,
+      note: note
+    });
 
-  try{
     await saveState();
     showToast('Part baru ditambahkan: '+partName);
     closeAddPartModal();
@@ -828,26 +844,25 @@ async function submitAddPart(){
     renderStockList();
     renderHistoryList();
   }catch(e){
-    errEl.textContent = 'Gagal menyimpan. Periksa koneksi lalu coba lagi.';
+    errEl.textContent = 'Gagal menyimpan: ' + e.message;
     errEl.style.display = 'block';
+  }finally{
+    isSaving = false;
+    el('addPartSubmitBtn').textContent = 'Simpan Part';
+    el('addPartSubmitBtn').disabled = false;
   }
-
-  isSaving = false;
-  el('addPartSubmitBtn').textContent = 'Simpan Part';
-  el('addPartSubmitBtn').disabled = false;
 }
 
 async function refreshFromStorage(silent){
   try{
-    const res = await fetch(FIREBASE_DB_URL + DATA_PATH + '.json');
-    const data = await res.json();
-    if(data) state = data;
+    const fetched = await fetchFirebaseState();
+    if(fetched) state = fetched;
     mergeMissingParts(state);
     renderRakFilters();
     if(currentView==='stock') renderStockList(); else renderHistoryList();
     if(!silent) showToast('Data terbaru dimuat.');
   }catch(e){
-    if(!silent) showToast('Gagal sinkron. Coba lagi.');
+    if(!silent) showToast('Gagal sinkron: ' + e.message);
   }
 }
 
