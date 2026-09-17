@@ -464,6 +464,15 @@ function showToast(msg){
   showToast._timer = setTimeout(()=> t.classList.remove('show'), 2600);
 }
 
+function toArraySafe(val){
+  if(Array.isArray(val)) return val;
+  if(val && typeof val === 'object'){
+    // Firebase menyimpan array sebagai object {0:..,1:..} kalau ada celah index
+    return Object.keys(val).sort((a,b)=>Number(a)-Number(b)).map(k=>val[k]);
+  }
+  return [];
+}
+
 async function fetchFirebaseState(){
   const res = await fetch(FIREBASE_DB_URL + DATA_PATH + '.json');
   if(!res.ok){
@@ -473,11 +482,17 @@ async function fetchFirebaseState(){
   if(data && data.error){
     throw new Error('Firebase error: '+data.error);
   }
-  if(data && !Array.isArray(data.parts)){
-    // data ada tapi bentuknya bukan state yang valid, anggap kosong
+  if(!data) return null; // belum ada data sama sekali di Firebase
+
+  const parts = toArraySafe(data.parts);
+  if(parts.length === 0 && !data.parts){
+    // data ada tapi field 'parts' nggak ada sama sekali -> anggap tidak valid
     return null;
   }
-  return data;
+  return {
+    parts: parts,
+    transactions: toArraySafe(data.transactions) // selalu array, default [] kalau hilang
+  };
 }
 
 async function loadState(){
@@ -693,6 +708,8 @@ async function submitModal(){
       fetchedOk = false;
       console.error('Gagal ambil data terbaru:', e.message);
     }
+    if(!Array.isArray(state.parts)) state.parts = [];
+    if(!Array.isArray(state.transactions)) state.transactions = [];
 
     const fresh = state.parts.find(x=>x.id===modalPartId);
     if(!fresh){
@@ -797,6 +814,8 @@ async function submitAddPart(){
     }catch(e){
       console.error('Gagal ambil data terbaru:', e.message);
     }
+    if(!Array.isArray(state.parts)) state.parts = [];
+    if(!Array.isArray(state.transactions)) state.transactions = [];
 
     const dupKey = keyOf(rak, partName);
     if(state.parts.some(p=> keyOf(p.rak, p.part) === dupKey)){
